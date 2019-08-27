@@ -1,0 +1,16 @@
+
+后面写的各种代码，还是要基于mysql去做一些开发的，因为缓存的底层的数据存储肯定是数据库
+
+mysql数据库，还是要部署一下的
+
+eshop-cache04
+
+先用yum安装mysql server
+
+yum install -y mysql-server
+
+service mysqld start
+chkconfig mysqld on
+
+yum install -y mysql-connector-java
+
