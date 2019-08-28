@@ -1,0 +1,129 @@
+
+因为之前跟大家提过，三级缓存，多级缓存，服务本地堆缓存 + redis分布式缓存 + nginx本地缓存组成的
+
+每一层缓存在高并发的场景下，都有其特殊的用途，需要综合利用多级的缓存，才能支撑住高并发场景下各种各样的特殊情况
+
+服务本地堆缓存，作用，预防redis层的彻底崩溃，作为缓存的最后一道防线，避免数据库直接裸奔
+
+服务本地堆缓存，我们用什么来做缓存，难道我们自己手写一个类或者程序去管理内存吗？？？java最流行的缓存的框架，ehcache
+
+所以我们也是用ehcache来做本地的堆缓存
+
+spring boot + ehcache整合起来，演示一下是怎么使用的
+
+spring boot整合ehcache
+
+（1）依赖
+
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-data-jpa</artifactId>
+</dependency>
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-context-support</artifactId>
+</dependency>
+<dependency>
+  <groupId>net.sf.ehcache</groupId>
+  <artifactId>ehcache</artifactId>
+  <version>2.8.3</version>
+</dependency>
+
+（2）缓存配置管理类
+
+@Configuration
+@EnableCaching
+public class CacheConfiguration {
+
+    @Bean
+    public EhCacheManagerFactoryBean ehCacheManagerFactoryBean(){
+      EhCacheManagerFactoryBean cacheManagerFactoryBean = new EhCacheManagerFactoryBean();
+      cacheManagerFactoryBean.setConfigLocation(new ClassPathResource("ehcache.xml"));
+      cacheManagerFactoryBean.setShared(true);
+      return cacheManagerFactoryBean;
+    }
+   
+    @Bean
+    public EhCacheCacheManager ehCacheCacheManager(EhCacheManagerFactoryBean bean){
+      return new EhCacheCacheManager(bean.getObject());
+    }
+     
+}
+
+（3）ehcache.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="http://ehcache.org/ehcache.xsd"
+    updateCheck="false">
+  
+    <diskStore path="java.io.tmpdir/Tmp_EhCache" />
+    
+    <defaultCache
+        eternal="false"
+        maxElementsInMemory="1000"
+        overflowToDisk="false"
+        diskPersistent="false"
+        timeToIdleSeconds="0"
+        timeToLiveSeconds="0"
+        memoryStoreEvictionPolicy="LRU" />
+ 
+    <cache
+        name="local"  
+        eternal="false"
+        maxElementsInMemory="1000"
+        overflowToDisk="false"
+        diskPersistent="false"
+        timeToIdleSeconds="0"
+        timeToLiveSeconds="0"
+        memoryStoreEvictionPolicy="LRU" />
+      
+</ehcache>
+
+（4）CacheService
+
+@Service("cacheService")  
+public class CacheServiceImpl implements CacheService {
+   
+    public static final String CACHE_NAME = "local";
+    
+    @Cacheable(value = CACHE_NAME, key = "'key_'+#id")
+    public ProductInfo findById(Long id){
+       return null;
+    }
+   
+    @CachePut(value = CACHE_NAME, key = "'key_'+#productInfo.getId()")
+    public ProductInfo saveProductInfo(ProductInfo productInfo) {
+      return productInfo;
+    }
+     
+}
+
+（5）写一个Controller测试一下ehcache的整合
+
+@Controller
+public class CacheTestController {
+
+  @Resource
+  private CacheService cacheService;
+  
+  @RequestMapping("/testPutCache")
+  @ResponseBody
+  public void testPutCache(ProductInfo productInfo) {
+    System.out.println(productInfo.getId() + ":" + productInfo.getName());  
+    cacheService.saveProductInfo(productInfo);
+  }
+  
+  @RequestMapping("/testGetCache")
+  @ResponseBody
+  public ProductInfo testGetCache(Long id) {
+    ProductInfo productInfo = cacheService.findById(id);
+    System.out.println(productInfo.getId() + ":" + productInfo.getName()); 
+    return productInfo;
+  }
+  
+}
+
+ehcache已经整合进了我们的系统，spring boot
+
+封装好了对ehcache本地缓存进行添加和获取的方法和service
