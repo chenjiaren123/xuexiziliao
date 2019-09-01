@@ -1,0 +1,50 @@
+
+讲了手写了storm wordcount程序
+
+蕴含了很多的知识点
+
+（1）Spout
+（2）Bolt
+（3）OutputCollector，Declarer
+（4）Topology
+（5）设置worker，executor，task，流分组
+
+storm的核心基本原理，基本的开发，学会了
+
+storm集群部署，怎么将storm的拓扑扔到storm集群上去跑
+
+六、部署一个storm集群
+
+（1）安装Java 7和Pythong 2.6.6
+
+（2）下载storm安装包，解压缩，重命名，配置环境变量
+
+（3）修改storm配置文件
+
+mkdir /var/storm
+
+conf/storm.yaml
+
+storm.zookeeper.servers:
+  - "111.222.333.444"
+  - "555.666.777.888"
+
+storm.local.dir: "/mnt/storm"
+
+nimbus.seeds: ["111.222.333.44"]
+
+slots.ports，指定每个机器上可以启动多少个worker，一个端口号代表一个worker
+
+supervisor.slots.ports:
+    - 6700
+    - 6701
+    - 6702
+    - 6703
+
+(4)启动storm集群和ui界面
+
+一个节点，storm nimbus >/dev/null 2>&1 &
+三个节点，storm supervisor >/dev/null 2>&1 &
+一个节点，storm ui >/dev/null 2>&1 &
+
+（5）访问一下ui界面，8080端口
